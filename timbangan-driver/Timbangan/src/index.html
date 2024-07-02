@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Node</title>
+  </head>
+  <link rel="stylesheet" href="./css/bootstrap.min.css" />
+  <style>
+    .container {
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+      border: 3px solid green;
+      flex-direction: column;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0px;
+    }
+  </style>
+
+  <body>
+    <div class="container">
+      <h1 id="output">0.00 Gr</h1>
+      <p class="lead">
+        Mohon Konfigurasi COM sesuai dengan timbangan yang dipakai
+      </p>
+      <div class="row mb-5">
+        <div class="col-lg-8">
+          <input
+            type="text"
+            id="nama"
+            name="nama"
+            placeholder="Masukan User Id"
+            class="form-control"
+          />
+        </div>
+        <div class="col-lg-4">
+          <button class="btn btn-primary btn-block" id="simpan">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script src="./js/socket.io.js"></script>
+  <script src="./js/jquery-3.5.1.min.js"></script>
+  <script src="./js/popper.min.js"></script>
+  <script src="./js/bootstrap.min.js"></script>
+  <script src="./js/idb-min.js"></script>
+  <script>
+    var socket = io.connect("http://localhost:4000/");
+    socket.on("temp", async function (data) {
+      var hasil = data.temp.split(" ");
+      var url = data.url + "/api/v1/tmp-timbangan";
+      for (var i = 0; i < hasil.length; i++) {
+        console.log(hasil[i]);
+        if (parseFloat(hasil[i]) > 0) {
+          dataku = hasil[i];
+
+          (await db).get(OBJECT_STORE_NAME, 1).then((user) => {
+            if (user && user.id) {
+              var dataaw = new Array();
+              dataaw["berat"] = dataku;
+              $("#output").html(dataaw["berat"] + " Gr");
+
+              $.ajax({
+                url: url,
+                type: "post",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                data: JSON.stringify({
+                  user_id: user.user_id,
+                  value: parseFloat(dataku)
+                }),
+                success: function (response) {
+                  console.log(response);
+                  // You will get response from your PHP page (what you echo or print)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                  console.log(textStatus, errorThrown);
+                }
+              });
+            } else {
+              alert("Mohon isi user id");
+              return false;
+            }
+          });
+        }
+      }
+    });
+  </script>
+  <script>
+    // DB CREDENTIAL
+    const DATABASE_NAME = "idb_timbangan";
+    const DATABASE_VERSION = 1;
+    const OBJECT_STORE_NAME = "tm_user";
+    const db = idb.openDB(DATABASE_NAME, DATABASE_VERSION, {
+      upgrade(database) {
+        database.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id" });
+      }
+    });
+
+    $(document).ready(async function () {
+      // console.log( "ready!" );
+      const user = await (await db).get(OBJECT_STORE_NAME, 1);
+      // console.log(user)
+      let nama = user.user_id;
+      // console.log(nama);
+      document.getElementById("nama").value = nama;
+    });
+    $("#simpan").click(async function (params) {
+      var id = $("#nama").val();
+      if (id == "") {
+        alert("User Id Harus Diisi");
+        document.getElementById("nama").focus();
+        return false;
+      }
+
+      (await db).put(OBJECT_STORE_NAME, { id: 1, user_id: id });
+      alert("Nama Berhasil Disimpan");
+    });
+  </script>
+</html>

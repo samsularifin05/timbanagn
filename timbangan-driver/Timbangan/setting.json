@@ -1,0 +1,8 @@
+{
+  "com": "COM3",
+  "url": "#",
+  "baudRate": 9600,
+  "dataBits": 8,
+  "parity": "none",
+  "stopBits": 1
+}
